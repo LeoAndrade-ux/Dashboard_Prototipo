@@ -16,7 +16,7 @@ export const Breaches = () => {
                 </tr>
             </thead>
             <tbody>
-            <tr className="table-secondary">
+            <tr class="table-secondary">
                 <th scope="row">Secondary</th>
                 <td>Column content</td>
                 <td>Column content</td>

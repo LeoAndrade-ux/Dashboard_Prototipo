@@ -29,7 +29,7 @@ class DarkTrace(object):
         macStr = "{a}\n{t}\n{d}".format(a=apiStr,t=self.token,d=dateStr).encode()
         sigStr = hmac.new(key=self.private,digestmod=hashlib.sha1,msg=macStr).hexdigest()
         headers = {"DTAPI-Token":self.token,"DTAPI-Date":dateStr,"DTAPI-Signature":sigStr}
-        req = requests.get(url,verify=False,headers=headers)
+        req = requests.get(url,verify=True,headers=headers)
         if req.status_code == 200:
             resp = json.loads(req.text)
         elif req.status_code == 400:

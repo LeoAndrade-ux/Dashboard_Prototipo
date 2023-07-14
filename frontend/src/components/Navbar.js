@@ -1,19 +1,48 @@
-import React from "react";
-import {Link} from 'react-router-dom'
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
-export const Navbar = () => (
+export const Navbar = () => {
 
-    <nav className="navbar navbar-expand-lg navbar-light bg-light">
-        <Link className="navbar-brand" to="/">DarkTrace</Link>
-        <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span className="navbar-toggler-icon" />
+  const [collapsed, setCollapsed] = useState(true);
+
+  const toggleNavbar = () => {
+    setCollapsed(!collapsed);
+  };
+
+  const navClass = collapsed ? "collapse navbar-collapse" : "navbar-collapse";
+
+  return (
+    <nav className="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
+      <div className="container-fluid">
+        <img src="/logo.png" alt ="logo" class="img-fluid"/>
+        <button className="navbar-toggler" type="button" onClick={toggleNavbar}>
+          <span className="navbar-toggler-icon"></span>
         </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
-            <ul className="navbar-nav">
-                <li className="nav-item active">
-                    <Link className="nav-link" to="/about">About</Link>
-                </li>
-            </ul>
+        <div className={navClass}>
+          <ul className="navbar-nav mr-auto">
+            <li className="nav-item">
+              <Link className="nav-link active" to="/">
+                Home
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/features">
+                Features
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/pricing">
+                Pricing
+              </Link>
+            </li>
+            <li className="nav-item">
+              <Link className="nav-link" to="/register">
+                Registrar
+              </Link>
+            </li>
+          </ul>
         </div>
+      </div>
     </nav>
-)
+  );
+};

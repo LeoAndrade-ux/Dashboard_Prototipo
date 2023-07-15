@@ -88,7 +88,7 @@ def createUser():
         'name_breach': 'breaches_'+ request.json.get('name').lower(),
         'type_user': 'user'
     })
-    return jsonify(str(cliente.inserted_id))
+    return jsonify({'msg': 'True'})
 
 
 @app.route("/clientes", methods=["GET"])

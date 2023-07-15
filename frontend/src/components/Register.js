@@ -13,7 +13,7 @@ export const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      fetch(`${API}/clientes`, {
+      const resp = await fetch(`${API}/clientes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -27,13 +27,21 @@ export const Register = () => {
           password: password,
         }),
       });
-      Swal.fire({
-        position: 'center',
-        icon: 'success',
-        title: 'Cliente registrado',
-        showConfirmButton: false,
-        timer: 1500
-      })
+      const data = await resp.json();
+      if (data['msg']==='True'){
+        Swal.fire({
+          icon: 'success',
+          title: 'Cliente registrado correctamente',
+          showConfirmButton: false,
+          timer: 1500
+        })
+      }else{
+        Swal.fire({
+          icon: 'error',
+          title: 'Oops...',
+          text: 'No se pudo registrar!',
+        })
+      }
       setName("");
       setIp("");
       setPassword("");
@@ -42,7 +50,11 @@ export const Register = () => {
       setUserName("");
 
     } catch (error) {
-      alert('No se pudo registrar el cliente')
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Algo salio mal!',
+      })
     }
   };
 

@@ -2,7 +2,7 @@ import React from "react";
 
 export const Users = () => {
 
-    const API = process.env.REACT_APP_API
+    //const API = process.env.REACT_APP_API
 
     return (
     <div className="row, col-md-12">

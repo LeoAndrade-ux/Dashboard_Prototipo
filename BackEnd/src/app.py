@@ -25,7 +25,7 @@ def createBreaches():
         'ip': request.json.get('ip'),
         'breach_time': request.json.get('breach_time')
     })
-    return jsonify(str(result.inserted_id))
+    return jsonify({'msg': 'True'})
 
 
 @app.route("/breaches", methods=["GET"])

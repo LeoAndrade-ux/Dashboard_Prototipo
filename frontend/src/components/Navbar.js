@@ -21,18 +21,13 @@ export const Navbar = () => {
         <div className={navClass}>
           <ul className="navbar-nav mr-auto">
             <li className="nav-item">
-              <Link className="nav-link active" to="/">
+              <Link className="nav-link" to="/">
                 Home
               </Link>
             </li>
             <li className="nav-item">
-              <Link className="nav-link" to="/features">
-                Features
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link className="nav-link" to="/pricing">
-                Pricing
+              <Link className="nav-link" to="/clients">
+                Clientes
               </Link>
             </li>
             <li className="nav-item">

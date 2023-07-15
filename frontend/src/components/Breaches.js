@@ -2,8 +2,8 @@ import React from "react";
 
 export const Breaches = () => {
 
-    const API = process.env.REACT_APP_API
-
+    const {API} = process.env
+    console.log(API)
     return (
     <div className="row, col-md-12">
         <table className="table table-hover">

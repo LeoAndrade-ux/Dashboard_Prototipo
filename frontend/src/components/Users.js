@@ -1,6 +1,6 @@
 import React from "react";
 
-export const Breaches = () => {
+export const Users = () => {
 
     const API = process.env.REACT_APP_API
 

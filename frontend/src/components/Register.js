@@ -1,17 +1,49 @@
-import React, {Fragment, useState} from "react";
+import React, { Fragment, useState } from "react";
+import Swal from 'sweetalert2'
 
 export const Register = () => {
+  const API = process.env.REACT_APP_API;
+  const [name, setName] = useState("");
+  const [ip, setIp] = useState("");
+  const [public_token, setPublicToken] = useState("");
+  const [private_token, setPrivateToken] = useState("");
+  const [UserName, setUserName] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [name, setName] = useState('')
-  const [ip , setIp] = useState('')
-  const [public_token, setPublicToken] = useState('')
-  const [private_token, setPrivateToken] = useState('')
-  const [UserName, setUserName] = useState('')
-  const [password, setPassword] = useState('')
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    try {
+      fetch(`${API}/clientes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name,
+          ip: ip,
+          public_token: public_token,
+          private_token: private_token,
+          username: UserName,
+          password: password,
+        }),
+      });
+      Swal.fire({
+        position: 'center',
+        icon: 'success',
+        title: 'Cliente registrado',
+        showConfirmButton: false,
+        timer: 1500
+      })
+      setName("");
+      setIp("");
+      setPassword("");
+      setPrivateToken("");
+      setPublicToken("");
+      setUserName("");
+
+    } catch (error) {
+      alert('No se pudo registrar el cliente')
+    }
   };
 
   return (
@@ -33,7 +65,7 @@ export const Register = () => {
                   placeholder="Ingrese un nombre"
                   required
                   onChange={(e) => setName(e.target.value)}
-                  value = {name}
+                  value={name}
                   autoFocus
                 />
               </div>
@@ -50,7 +82,7 @@ export const Register = () => {
                   placeholder="0.0.0.0"
                   required
                   onChange={(e) => setIp(e.target.value)}
-                  value = {ip}
+                  value={ip}
                 />
               </div>
             </div>
@@ -66,7 +98,7 @@ export const Register = () => {
                   placeholder="Ingrese el token público"
                   required
                   onChange={(e) => setPublicToken(e.target.value)}
-                  value = {public_token}
+                  value={public_token}
                 />
               </div>
             </div>
@@ -82,7 +114,7 @@ export const Register = () => {
                   placeholder="Ingrese el token privado"
                   required
                   onChange={(e) => setPrivateToken(e.target.value)}
-                  value = {private_token}
+                  value={private_token}
                 />
               </div>
             </div>
@@ -97,7 +129,7 @@ export const Register = () => {
                   id="UserName"
                   placeholder="Nombre de usuario"
                   onChange={(e) => setUserName(e.target.value)}
-                  value = {UserName}
+                  value={UserName}
                 />
               </div>
             </div>
@@ -113,14 +145,17 @@ export const Register = () => {
                   placeholder="Contraseña"
                   required
                   onChange={(e) => setPassword(e.target.value)}
-                  value = {password}
+                  value={password}
                 />
               </div>
             </div>
           </div>
         </fieldset>
         <div className="d-grid gap-2 col-6 mx-auto pt-3">
-          <button className=" btn btn-lg btn-primary rounded-pill" type="submit">
+          <button
+            className=" btn btn-lg btn-primary rounded-pill"
+            type="submit"
+          >
             Registrar
           </button>
         </div>

@@ -18,7 +18,7 @@ db_client = mongo.db.clients
 
 @app.route("/breaches", methods=["POST"])
 def createBreaches():
-    result = db_breaches.insert_one({
+    db_breaches.insert_one({
         'model_name': request.json.get('name'),
         'description': request.json.get('description'),
         'score': request.json.get('score'),
@@ -116,14 +116,14 @@ def getUser(id):
     user = db_client.find_one({'_id': ObjectId(id)})
     return jsonify({
         '_id': str(user['_id']),
-        'name': request.json.get('name'),
-        'ip': request.json.get('ip'),
-        'public_token': request.json.get('public_token'),
-        'private_token': request.json.get('private_token'),
-        'username': request.json.get('username'),
-        'password': request.json.get('password'),
-        'name_breach': request.json.get('name_breach'),
-        'type_user': request.json.get('type_user')
+        'name': user['name'],
+        'ip': user['ip'],
+        'public_token': user['public_token'],
+        'private_token': user['private_token'],
+        'username': user['username'],
+        'password': user['password'],
+        'name_breach': user['name_breach'],
+        'type_user': user['type_user']
     })
 
 

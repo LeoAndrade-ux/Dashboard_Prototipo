@@ -13,6 +13,22 @@ CORS(app)
 db_breaches = mongo.db.breaches_radical
 db_client = mongo.db.clients
 
+
+
+#Busqueda dinamica
+@app.route('/buscar_clientes', methods=['GET'])
+def buscar_clientes():
+    query = request.args.get('q','')
+    resultados_clientes = db_client.find({"nombre":{"$regex":query,"$options":"i"}})
+    return jsonify(list(resultados_clientes))
+
+@app.route('/buscar_breaches', methods=['GET'])
+def buscar_breaches():
+    query = request.args.get('q','')
+    resultados_clientes = db_breaches.find({"model_name":{"$regex":query,"$options":"i"}}).sort("_id", -1)
+    return jsonify(list(resultados_clientes))
+
+
 # CRUD base de datos para las brechas
 
 
@@ -31,7 +47,7 @@ def createBreaches():
 @app.route("/breaches", methods=["GET"])
 def getBreaches():
     breaches = []
-    for doc in db_breaches.find():
+    for doc in db_breaches.find().sort("_id", -1):
         breaches.append({
             '_id': str(doc['_id']),
             'model_name': doc['model_name'],
@@ -99,8 +115,8 @@ def getUsers():
             '_id': str(doc['_id']),
             'name': doc['name'],
             'ip': doc['ip'],
-            'public_token': doc['public_token'],
-            'private_token': doc['private_token'],
+            'public_token': doc['public_token'][:20]+" "+doc['public_token'][20:],
+            'private_token': doc['private_token'][:20]+" "+doc['private_token'][20:],
             'username': doc['username'],
             'password': doc['password'],
             'name_breach': doc['name_breach'],

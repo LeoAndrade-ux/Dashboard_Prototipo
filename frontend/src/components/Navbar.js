@@ -4,6 +4,7 @@ import {Link} from "react-router-dom";
 export const Navbar = () => {
     const [collapsed, setCollapsed] = useState(true);
 
+
     const toggleNavbar = () => {
         setCollapsed(!collapsed);
     };
@@ -13,7 +14,7 @@ export const Navbar = () => {
     return (
         <nav className="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
             <div className="container-fluid">
-                <img src="/logo.png" alt="logo" className="img-fluid"/>
+                <img src="/logo.png" alt="logo" className="img-fluid pe-5"/>
                 <button className="navbar-toggler" type="button"
                     onClick={toggleNavbar}>
                     <span className="navbar-toggler-icon"></span>

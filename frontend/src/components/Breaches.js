@@ -1,16 +1,41 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import Swal from "sweetalert2";
 
 const API = process.env.REACT_APP_API;
 
 export const Breaches = () => {
     const [breaches, setBreaches] = useState([]);
+    const [query, setQuery] = useState("");
+    const [searchResults, setSearchResults] = useState([]);
+
+    const handleInputChange = (event) => {
+        event.preventDefault();
+        const termino = event.target.value;
+        setQuery(termino);
+        // Si el término de búsqueda está vacío, restaurar la tabla completa
+        if (termino.trim() === "") {
+            setSearchResults(breaches);
+        } else {
+            // Hacer las solicitudes al backend cuando el usuario escriba algo
+            buscarResultadosBreaches(termino);
+        }
+    };
+
+    const buscarResultadosBreaches = async (termino) => {
+        // Hacer la solicitud al backend para buscar en la colección de clientes
+        const resp = await fetch(`${API}/buscar_breaches?q=${termino}`, {
+            method: "GET"
+        });
+        const data = await resp.json();
+        setSearchResults(data);
+    };
 
     const getbreachs = async () => {
         try {
             const resp = await fetch(`${API}/breaches`, { method: "GET" });
             const data = await resp.json();
             setBreaches(data);
+            setSearchResults(data); // Mostrar toda la tabla al cargar la página
         } catch (error) {
             Swal.fire({
                 icon: "error",
@@ -19,12 +44,25 @@ export const Breaches = () => {
             });
         }
     };
+
     useEffect(() => {
         getbreachs();
     }, []);
 
     return (
-        <div className="row, col-md-12">
+        <Fragment>
+            <form  className="d-flex">
+                <input
+                    className="form-control me-sm-2"
+                    type="search"
+                    placeholder="Search"
+                    onChange={handleInputChange}
+                    value={query}
+                />
+                <button className="btn btn-secondary my-2 my-sm-0" type="submit">
+                    Search
+                </button>
+            </form>
             <table className="table table-hover">
                 <thead className="table-dark">
                     <tr>
@@ -33,22 +71,22 @@ export const Breaches = () => {
                         <th scope="col">Descripción</th>
                         <th scope="col">Puntaje</th>
                         <th scope="col">IP</th>
-                        <th scope="col">Tiempo de la brecha</th>
+                        <th scope="col">Fecha</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {breaches?.map((breach) => (
-                        <tr classname="table-secondary">
-                            <th scope="row">{breach._id}</th>
-                            <td>{breach.model_name}</td>
-                            <td>{breach.description}</td>
-                            <td>{breach.score}</td>
-                            <td>{breach.ip}</td>
-                            <td>{breach.breach_time}</td>
+                    {searchResults.map((item) => (
+                        <tr className="table-secondary" key={item._id}>
+                            <th scope="row">{item._id}</th>
+                            <td>{item.model_name}</td>
+                            <td>{item.description}</td>
+                            <td>{item.score}</td>
+                            <td>{item.ip}</td>
+                            <td>{item.breach_time}</td>
                         </tr>
                     ))}
                 </tbody>
             </table>
-        </div>
+        </Fragment>
     );
 };

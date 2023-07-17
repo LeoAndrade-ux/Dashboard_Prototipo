@@ -1,19 +1,22 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import Swal from "sweetalert2";
 
 const API = process.env.REACT_APP_API;
 
 export const Users = () => {
-
     const [users, setUsers] = useState([]);
 
     const getUsers = async () => {
         try {
-            const resp = await fetch(`${API}/clientes`, {method: "GET"});
+            const resp = await fetch(`${API}/clientes`, { method: "GET" });
             const data = await resp.json();
             setUsers(data);
         } catch (error) {
-            Swal.fire({icon: "error", title: "Oops...", text: "No se pudo consultar!"});
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "No se pudo consultar!",
+            });
         }
     };
     useEffect(() => {
@@ -21,7 +24,11 @@ export const Users = () => {
     }, []);
 
     return (
-        <div className="row, col-md-12">
+        <Fragment>
+            <form className="d-flex">
+                <input className="form-control me-sm-2" type="search" placeholder="Search" />
+                <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+            </form>
             <table className="table table-hover">
                 <thead className="table-dark">
                     <tr>
@@ -37,7 +44,7 @@ export const Users = () => {
                 </thead>
                 <tbody> {
                     users?.map(user => (
-                        <tr classname="table-secondary">
+                        <tr>
                             <th scope="row">{user.name}</th>
                             <td>{user.ip}</td>
                             <td>{user.public_token}</td>
@@ -50,6 +57,6 @@ export const Users = () => {
                     ))
                 } </tbody>
             </table>
-        </div>
+        </Fragment>
     );
 };

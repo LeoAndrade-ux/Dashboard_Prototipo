@@ -1,35 +1,46 @@
 import time
 from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
 import api_conecction_console as ca
 
 mongo = MongoClient("mongodb://localhost:27017/")
 db = mongo.DarkTrace
 
+
 def breaches_model(ip, public_token, private_token, owner, database):
     collection = database[owner]
-    brechas_modelo_darktrace = ca.darktrace_api_call(ip, public_token, private_token, "modelbreaches")
+    # Obtener los _id existentes en la colección
+    existing_ids = set(doc["_id"] for doc in collection.find({}, {"_id": 1}))
+    brechas_modelo_darktrace = ca.darktrace_api_call(
+        ip, public_token, private_token, "modelbreaches")
     bulk_operations = []
     for breach in brechas_modelo_darktrace:
         id = breach["pbid"]
-        model_name = breach["model"]["then"]["name"]
-        description = breach["model"]["then"]["description"]
-        score = breach["score"]
-        ip = breach["device"].get("ip", "No disponible")
-        breach_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(breach["creationTime"] / 1000))
+        # Verificar si el _id ya existe en la colección
+        if id not in existing_ids:
+            model_name = breach["model"]["then"]["name"]
+            description = breach["model"]["then"]["description"]
+            score = breach["score"]
+            ip = breach["device"].get("ip", "No disponible")
+            breach_time = time.strftime(
+                "%Y-%m-%d %H:%M:%S", time.localtime(breach["creationTime"] / 1000))
 
-        document = {
-            "_id": id,
-            "model_name": model_name,
-            "description": description,
-            "score": score,
-            "ip": ip,
-            "breach_time": breach_time,
-        }
+            document = {
+                "_id": id,
+                "model_name": model_name,
+                "description": description,
+                "score": score,
+                "ip": ip,
+                "breach_time": breach_time,
+            }
 
-        bulk_operations.append(document)
+            bulk_operations.append(document)
 
     if bulk_operations:
-        collection.insert_many(bulk_operations)
+        try:
+            collection.insert_many(bulk_operations)
+        except DuplicateKeyError:
+            print("Se detectaron documentos duplicados en la inserción.")
 
 
 for document in db.clients.find():

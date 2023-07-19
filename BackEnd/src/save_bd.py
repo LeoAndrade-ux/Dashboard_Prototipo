@@ -23,7 +23,7 @@ def breaches_model(ip, public_token, private_token, owner, database):
             score = breach["score"]
             ip = breach["device"].get("ip", "No disponible")
             breach_time = time.strftime(
-                "%Y-%m-%d %H:%M:%S", time.localtime(breach["creationTime"] / 1000))
+                "%Y-%m-%d", time.localtime(breach["creationTime"] / 1000))
 
             document = {
                 "_id": id,

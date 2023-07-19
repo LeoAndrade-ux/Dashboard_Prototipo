@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo, ObjectId
 from flask_cors import CORS
+from operaciones import conteo_brechas
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/DarkTrace"
@@ -14,6 +15,22 @@ db_breaches = mongo.db.breaches_radical
 db_client = mongo.db.clients
 
 
+#Graficos
+
+@app.route('/datos_grafica', methods=['GET'])
+def obtener_datos_grafica():
+    breaches = []
+    for doc in db_breaches.find().sort("_id", -1):
+        breaches.append({
+            '_id': str(doc['_id']),
+            'model_name': doc['model_name'],
+            'description': doc['description'],
+            'score': doc['score'],
+            'ip': doc['ip'],
+            'breach_time': doc['breach_time']
+        })
+    datos = conteo_brechas(breaches)
+    return jsonify(datos)
 
 #Busqueda dinamica
 @app.route('/buscar_clientes', methods=['GET'])

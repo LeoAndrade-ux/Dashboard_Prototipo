@@ -2,8 +2,8 @@ from darktrace import DarkTrace
 from datetime import datetime
 
 
-def darktrace_api_call(ip, public_token, private_token, attrib):  #recibe atirbuto que se desea conocer
-    ### Datos para formar signature de autorización
+def darktrace_api_call(ip, public_token, private_token, attrib):
+    ### Datos para formar firma de autorización
     host = ip
     token = public_token
     private = private_token

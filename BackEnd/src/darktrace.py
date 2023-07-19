@@ -32,8 +32,8 @@ class DarkTrace(object):
         req = requests.get(url,verify=False,headers=headers)
         if req.status_code == 200:
             resp = json.loads(req.text)
-            with open('respuesta2.json', 'w') as file:
-                json.dump(resp, file, indent=4)
+            """with open('respuesta2.json', 'w') as file:
+                json.dump(resp, file, indent=4)"""
         elif req.status_code == 400:
             raise(Exception("Authentication error"))
         else:

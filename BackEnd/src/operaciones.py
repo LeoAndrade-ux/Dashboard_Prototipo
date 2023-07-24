@@ -1,23 +1,20 @@
-# Supongamos que recibimos un JSON con una lista de documentos como 'data'
+from collections import defaultdict
+
 def conteo_brechas(data):
-    model_counts = {}
+    model_counts = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
     result_json = {}
+
     for doc in data:
         breach_time = doc['breach_time']
         model_name = doc['model_name']
+        ip = doc['ip']
 
-        if breach_time not in model_counts:
-            model_counts[breach_time] = {}
+        # Contar elementos repetidos por IP y fecha
+        model_counts[ip][breach_time][model_name] += 1
 
-        if model_name not in model_counts[breach_time]:
-            model_counts[breach_time][model_name] = 0
-
-        model_counts[breach_time][model_name] += 1
-
-    for breach_time, counts in model_counts.items():
-        result_json[breach_time] = {model_name: count for model_name, count in counts.items()}
+    # Construir el JSON resultado con el formato deseado
+    for ip, dates in model_counts.items():
+        for breach_time, counts in dates.items():
+            result_json.setdefault(breach_time, {})[ip] = counts
 
     return result_json
-
-
-

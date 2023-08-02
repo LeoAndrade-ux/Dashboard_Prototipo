@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, useCallback } from "react";
 import Swal from "sweetalert2";
 
 const API = process.env.REACT_APP_API;
@@ -7,7 +7,7 @@ export const Users = () => {
     const [users, setUsers] = useState([]);
     const token = localStorage.getItem('token');
     
-    const getUsers = async () => {
+    const getUsers = useCallback(async () => {
         try {
             const resp = await fetch(`${API}/clientes`, { method: "GET" ,headers: {
                 'Content-Type': 'application/json',
@@ -22,10 +22,10 @@ export const Users = () => {
                 text: "No se pudo consultar!",
             });
         }
-    };
+    }, [token]);
     useEffect(() => {
         getUsers();
-    },[]);
+    }, [getUsers]);
 
     return (
         <Fragment>

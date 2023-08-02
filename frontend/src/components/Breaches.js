@@ -8,6 +8,8 @@ export const Breaches = () => {
     const [query, setQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
 
+    const token = localStorage.getItem('token');
+
     const handleInputChange = (event) => {
         event.preventDefault();
         const termino = event.target.value;
@@ -24,7 +26,11 @@ export const Breaches = () => {
     const buscarResultadosBreaches = async (termino) => {
         // Hacer la solicitud al backend para buscar en la colección de clientes
         const resp = await fetch(`${API}/buscar_breaches?q=${termino}`, {
-            method: "GET"
+            method: "GET",
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
         });
         const data = await resp.json();
         setSearchResults(data);
@@ -32,7 +38,10 @@ export const Breaches = () => {
 
     const getbreachs = async () => {
         try {
-            const resp = await fetch(`${API}/breaches`, { method: "GET" });
+            const resp = await fetch(`${API}/breaches`, { method: "GET" ,headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }});
             const data = await resp.json();
             setBreaches(data);
             setSearchResults(data); // Mostrar toda la tabla al cargar la página

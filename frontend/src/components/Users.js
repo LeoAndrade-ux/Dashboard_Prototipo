@@ -5,10 +5,14 @@ const API = process.env.REACT_APP_API;
 
 export const Users = () => {
     const [users, setUsers] = useState([]);
-
+    const token = localStorage.getItem('token');
+    
     const getUsers = async () => {
         try {
-            const resp = await fetch(`${API}/clientes`, { method: "GET" });
+            const resp = await fetch(`${API}/clientes`, { method: "GET" ,headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            } });
             const data = await resp.json();
             setUsers(data);
         } catch (error) {
@@ -21,13 +25,13 @@ export const Users = () => {
     };
     useEffect(() => {
         getUsers();
-    }, []);
+    },[]);
 
     return (
         <Fragment>
             <form className="d-flex">
                 <input className="form-control me-sm-2" type="search" placeholder="Search" />
-                <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+                <button className="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
             </form>
             <table className="table table-hover">
                 <thead className="table-dark">

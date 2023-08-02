@@ -1,6 +1,8 @@
 import React, {useState} from "react";
 import Swal from 'sweetalert2'
 
+const token = localStorage.getItem('token');
+
 export const Register = () => {
     const API = process.env.REACT_APP_API;
     const [name, setName] = useState("");
@@ -9,14 +11,15 @@ export const Register = () => {
     const [private_token, setPrivateToken] = useState("");
     const [UserName, setUserName] = useState("");
     const [password, setPassword] = useState("");
-
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             const resp = await fetch(`${API}/clientes`, {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(
                     {
@@ -29,6 +32,7 @@ export const Register = () => {
                     }
                 )
             });
+
             const data = await resp.json();
             if (data['msg'] === 'True') {
                 Swal.fire({icon: 'success', title: 'Cliente registrado correctamente', showConfirmButton: false, timer: 1500})

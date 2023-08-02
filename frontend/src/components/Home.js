@@ -10,17 +10,35 @@ export const Home = () => {
     const [startDate, setStartDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
 
+
     const obtenerDatosGrafica = async () => {
-        try {
-            const response = await fetch(`${API}/datos_grafica`);
-            if (!response.ok) {
-                throw new Error("Error al obtener los datos.");
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                await fetch(`${API}/datos_grafica`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('No se pudo obtener los datos protegidos');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        setData(data); // Actualiza el estado con los datos recibidos del backend
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            } catch (error) {
+                console.error(error);
             }
-            const jsonData = await response.json();
-            setData(jsonData);
-        } catch (error) {
-            console.error(error);
         }
+
     };
 
     useEffect(() => {

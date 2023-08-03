@@ -1,5 +1,6 @@
-import React, { useState, useEffect, Fragment, useCallback} from "react";
+import React, { useState, useEffect, Fragment, useCallback } from "react";
 import Swal from "sweetalert2";
+import TokenExpiredAlert from "./Wrapper";
 
 const API = process.env.REACT_APP_API;
 
@@ -8,7 +9,7 @@ export const Breaches = () => {
     const [query, setQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
 
     const handleInputChange = (event) => {
         event.preventDefault();
@@ -28,9 +29,9 @@ export const Breaches = () => {
         const resp = await fetch(`${API}/buscar_breaches?q=${termino}`, {
             method: "GET",
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
         });
         const data = await resp.json();
         setSearchResults(data);
@@ -38,10 +39,13 @@ export const Breaches = () => {
 
     const getbreachs = useCallback(async () => {
         try {
-            const resp = await fetch(`${API}/breaches`, { method: "GET" ,headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            }});
+            const resp = await fetch(`${API}/breaches`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
             const data = await resp.json();
             setBreaches(data);
             setSearchResults(data); // Mostrar toda la tabla al cargar la página
@@ -56,46 +60,59 @@ export const Breaches = () => {
 
     useEffect(() => {
         getbreachs();
+        const isTokenExpired = () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                return true;
+            }
+            const decodedToken = JSON.parse(atob(token.split(".")[1]));
+            const expirationDate = new Date(decodedToken.exp * 1000);
+            return expirationDate < new Date();
+        };
+
+        if (isTokenExpired()) {
+            // Mostrar la alerta de token caducado utilizando el componente reutilizable
+            TokenExpiredAlert();
+        }
     });
 
     return (
         <Fragment>
-            <form  className="d-flex">
+            <form className="form-inline my-2"> {/* Utiliza la clase form-inline para hacer el formulario en línea */}
                 <input
-                    className="form-control me-sm-2"
+                    className="form-control mr-sm-2"
                     type="search"
                     placeholder="Search"
                     onChange={handleInputChange}
                     value={query}
                 />
-                <button className="btn btn-secondary my-2 my-sm-0" type="submit">
-                    Search
-                </button>
             </form>
-            <table className="table table-hover">
-                <thead className="table-dark">
-                    <tr>
-                        <th scope="col">ID</th>
-                        <th scope="col">Nombre del Modelo</th>
-                        <th scope="col">Descripción</th>
-                        <th scope="col">Puntaje</th>
-                        <th scope="col">IP</th>
-                        <th scope="col">Fecha</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {searchResults.map((item) => (
-                        <tr className="table-secondary" key={item._id}>
-                            <th scope="row">{item._id}</th>
-                            <td>{item.model_name}</td>
-                            <td>{item.description}</td>
-                            <td>{item.score}</td>
-                            <td>{item.ip}</td>
-                            <td>{item.breach_time}</td>
+            <div className="table-responsive"> {/* Utiliza la clase table-responsive para hacer la tabla responsive */}
+                <table className="table table-hover table-bordered">
+                    <thead className="table-dark">
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Nombre del Modelo</th>
+                            <th scope="col">Descripción</th>
+                            <th scope="col">Puntaje</th>
+                            <th scope="col">IP</th>
+                            <th scope="col">Fecha</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {searchResults.map((item) => (
+                            <tr className="table-secondary" key={item._id}>
+                                <th scope="row">{item._id}</th>
+                                <td>{item.model_name}</td>
+                                <td>{item.description}</td>
+                                <td>{item.score}</td>
+                                <td>{item.ip}</td>
+                                <td>{item.breach_time}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </Fragment>
     );
 };

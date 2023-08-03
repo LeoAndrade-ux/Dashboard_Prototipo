@@ -1,5 +1,6 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import Swal from 'sweetalert2'
+import TokenExpiredAlert from "./Wrapper";
 
 const token = localStorage.getItem('token');
 
@@ -50,6 +51,23 @@ export const Register = () => {
             Swal.fire({icon: 'error', title: 'Oops...', text: 'Algo salio mal!'})
         }
     };
+
+    useEffect(() => {
+        const isTokenExpired = () => {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            return true;
+          }
+          const decodedToken = JSON.parse(atob(token.split(".")[1]));
+          const expirationDate = new Date(decodedToken.exp * 1000);
+          return expirationDate < new Date();
+        };
+    
+        if (isTokenExpired()) {
+          // Mostrar la alerta de token caducado utilizando el componente reutilizable
+          TokenExpiredAlert();
+        }
+      }, []);
 
     return (
         <div className="container-lg">

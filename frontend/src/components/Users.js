@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Fragment, useCallback } from "react";
 import Swal from "sweetalert2";
+import TokenExpiredAlert from "./Wrapper";
 
 const API = process.env.REACT_APP_API;
 
@@ -26,6 +27,20 @@ export const Users = () => {
     }, [token]);
     useEffect(() => {
         getUsers();
+        const isTokenExpired = () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+              return true;
+            }
+            const decodedToken = JSON.parse(atob(token.split(".")[1]));
+            const expirationDate = new Date(decodedToken.exp * 1000);
+            return expirationDate < new Date();
+          };
+      
+          if (isTokenExpired()) {
+            // Mostrar la alerta de token caducado utilizando el componente reutilizable
+            TokenExpiredAlert();
+          }
     },);
 
     return (
@@ -36,9 +51,6 @@ export const Users = () => {
                     type="search"
                     placeholder="Search"
                 />
-                <button className="btn btn-secondary my-2 my-sm-0" type="submit">
-                    Search
-                </button>
             </form>
             <div className="table-responsive"> {/* Utiliza la clase table-responsive para hacer la tabla responsive */}
                 <table className="table table-hover table-bordered">

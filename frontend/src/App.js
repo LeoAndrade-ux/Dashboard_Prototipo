@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { Register } from './components/Register';
 import { Breaches } from './components/Breaches';
 import { Navbar } from './components/Navbar';
@@ -10,15 +10,21 @@ import { Login } from './components/Login';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+
 
   // Función para manejar el inicio de sesión exitoso
   const handleLogin = () => {
     setIsLoggedIn(true);
+    navigate('/');
+
   };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
+    navigate('/login');
+
   };
 
   useEffect(() => {

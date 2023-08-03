@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Swal from 'sweetalert2';
 
 
 
@@ -8,7 +9,6 @@ export const Login = () => {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
 
   const handleLogin = () => {
     const requestOptions = {
@@ -25,20 +25,24 @@ export const Login = () => {
         return response.json();
       })
       .then((data) => {
-        // Si el inicio de sesión es exitoso, guarda el token en el almacenamiento local o en una cookie
         const token = data.access_token;
         localStorage.setItem('token', token);
-        window.location.href='/'
+        Swal.fire({icon: 'success', title: 'Bienvenido!!!', showConfirmButton: false, timer: 1500})
+        window.location.href = '/';
       })
       .catch((error) => {
-        setErrorMessage(error.message);
+        // Mostrar alerta con el mensaje de error
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: error.message,
+        });
       });
   };
 
   return (
     <div>
       <h2>Login</h2>
-      {errorMessage && <div>{errorMessage}</div>}
       <input
         type="text"
         placeholder="Nombre de usuario"

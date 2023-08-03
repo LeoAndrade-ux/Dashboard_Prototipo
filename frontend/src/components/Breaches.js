@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Fragment } from "react";
+import React, { useState, useEffect, Fragment, useCallback} from "react";
 import Swal from "sweetalert2";
 
 const API = process.env.REACT_APP_API;
@@ -36,7 +36,7 @@ export const Breaches = () => {
         setSearchResults(data);
     };
 
-    const getbreachs = async () => {
+    const getbreachs = useCallback(async () => {
         try {
             const resp = await fetch(`${API}/breaches`, { method: "GET" ,headers: {
                 'Content-Type': 'application/json',
@@ -52,11 +52,11 @@ export const Breaches = () => {
                 text: "No se pudo consultar!",
             });
         }
-    };
+    }, [token]);
 
     useEffect(() => {
         getbreachs();
-    }, []);
+    });
 
     return (
         <Fragment>

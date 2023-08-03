@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo, ObjectId
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import jwt_required, create_access_token, JWTManager
+from flask_jwt_extended import jwt_required, create_access_token, JWTManager, get_jwt_identity
 from operaciones import conteo_brechas
 
 
@@ -23,6 +23,29 @@ db_client = mongo.db.clients
 
 
 #Autenticacion de clientes
+
+# Función para obtener el usuario actual a partir del token JWT
+@jwt.user_identity_loader
+def user_identity_lookup(user):
+    return str(user)
+
+
+# Función para manejar el error de autenticación
+@jwt.unauthorized_loader
+def unauthorized_response(callback):
+    return jsonify({"message": "Unauthorized"}), 401
+
+# Función para manejar el error de token inválido o expirado
+@jwt.invalid_token_loader
+def invalid_token_response(callback):
+    return jsonify({"message": "Invalid token"}), 401
+
+# Función para manejar el error de token no presente
+@jwt.unauthorized_loader
+def unauthorized_response(callback):
+    return jsonify({"message": "Token is missing"}), 401
+
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -31,8 +54,7 @@ def login():
 
     # Buscar el cliente por username en la base de datos
     client = db_client.find_one({'username': username})
-
-    if (client['password'], password):
+    if client and bcrypt.check_password_hash(client['password'], password):
         # La autenticación es exitosa, generar y devolver el token JWT
         token = create_access_token(identity=str(client['_id']))
         return jsonify(access_token=token), 200
@@ -44,8 +66,12 @@ def login():
 @app.route('/datos_grafica', methods=['GET'])
 @jwt_required()
 def obtener_datos_grafica():
+    user_id = get_jwt_identity()
+    breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
+    db_tst = mongo.db[breach]
+
     breaches = []
-    for doc in db_breaches.find().sort("_id", -1):
+    for doc in db_tst.find().sort("_id", -1):
         breaches.append({
             '_id': str(doc['_id']),
             'model_name': doc['model_name'],

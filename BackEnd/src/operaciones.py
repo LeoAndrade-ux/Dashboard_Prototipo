@@ -18,3 +18,17 @@ def conteo_brechas(data):
             result_json.setdefault(breach_time, {})[ip] = counts
 
     return result_json
+
+
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            user_id = get_jwt_identity()
+            user = db_client.find_one({'_id': user_id})
+            if user and 'type_user' in user:
+                role = user['type_user']
+                if role in ROLES and all(permiso in ROLES[role] for permiso in permisos):
+                    return fn(*args, **kwargs)
+            return jsonify(message='No tienes permisos para realizar esta acción'), 403
+        return wrapper
+    return decorator

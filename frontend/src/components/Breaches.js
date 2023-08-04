@@ -1,10 +1,10 @@
 import React, { useState, useEffect, Fragment, useCallback } from "react";
 import Swal from "sweetalert2";
-import TokenExpiredAlert from "./Wrapper";
+import TokenExpiredAlert from "./TokenExpiredAlert";
 
 const API = process.env.REACT_APP_API;
 
-export const Breaches = () => {
+export const Breaches = ({ handleSessionExpired }) => {
     const [breaches, setBreaches] = useState([]);
     const [query, setQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
@@ -34,6 +34,7 @@ export const Breaches = () => {
             },
         });
         const data = await resp.json();
+        console.log(data)
         setSearchResults(data);
     };
 
@@ -72,9 +73,11 @@ export const Breaches = () => {
 
         if (isTokenExpired()) {
             // Mostrar la alerta de token caducado utilizando el componente reutilizable
-            TokenExpiredAlert();
+            localStorage.removeItem('token');
+            TokenExpiredAlert(handleSessionExpired);
+
         }
-    });
+    }, [getbreachs, handleSessionExpired]);
 
     return (
         <Fragment>
@@ -100,16 +103,23 @@ export const Breaches = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {searchResults.map((item) => (
-                            <tr className="table-secondary" key={item._id}>
-                                <th scope="row">{item._id}</th>
-                                <td>{item.model_name}</td>
-                                <td>{item.description}</td>
-                                <td>{item.score}</td>
-                                <td>{item.ip}</td>
-                                <td>{item.breach_time}</td>
-                            </tr>
-                        ))}
+                        {searchResults.map((item) => {
+                            try {
+                                return (
+                                    <tr className="table-secondary" key={item._id}>
+                                        <th scope="row">{item._id}</th>
+                                        <td>{item.model_name}</td>
+                                        <td>{item.description}</td>
+                                        <td>{item.score}</td>
+                                        <td>{item.ip}</td>
+                                        <td>{item.breach_time}</td>
+                                    </tr>
+                                );
+                            } catch (error) {
+                                console.error("Error al renderizar fila:", error);
+                                return null; // O puedes mostrar un mensaje de error o realizar alguna acción adecuada en caso de error
+                            }
+                        })}
                     </tbody>
                 </table>
             </div>

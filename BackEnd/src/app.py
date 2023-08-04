@@ -1,3 +1,4 @@
+from functools import wraps
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo, ObjectId
 from flask_cors import CORS
@@ -21,6 +22,26 @@ jwt = JWTManager(app)
 db_breaches = mongo.db.breaches_radical
 db_client = mongo.db.clients
 
+#Definir roles y permisos
+ROLES = {
+    'normal': ['home', 'breaches'],
+    'administrador': ['home', 'breaches', 'register', 'clients']
+}
+# Función de autorización para verificar los permisos del usuario
+def authorize(permisos):
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            user_id = get_jwt_identity()
+            user = db_client.find_one({'_id': ObjectId(user_id)})
+            if user and 'type_user' in user:
+                role = user['type_user']
+                print(role)
+                if role in ROLES and all(permiso in ROLES[role] for permiso in permisos):
+                    return fn(*args, **kwargs)
+            return jsonify(message='No tienes permisos para realizar esta acción'), 403
+        return wrapper
+    return decorator
 
 #Autenticacion de clientes
 
@@ -56,7 +77,8 @@ def login():
     client = db_client.find_one({'username': username})
     if client and bcrypt.check_password_hash(client['password'], password):
         # La autenticación es exitosa, generar y devolver el token JWT
-        token = create_access_token(identity=str(client['_id']))
+        user_type = client.get('type_user', 'normal')
+        token = create_access_token(identity=str(client['_id']), additional_claims={'type_user': user_type})
         return jsonify(access_token=token), 200
 
     return jsonify(message='Credenciales inválidas'), 401
@@ -65,13 +87,13 @@ def login():
 
 @app.route('/datos_grafica', methods=['GET'])
 @jwt_required()
+
 def obtener_datos_grafica():
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
-    db_tst = mongo.db[breach]
-
+    db = mongo.db[breach]
     breaches = []
-    for doc in db_tst.find().sort("_id", -1):
+    for doc in db.find().sort("_id", -1):
         breaches.append({
             '_id': str(doc['_id']),
             'model_name': doc['model_name'],
@@ -86,6 +108,7 @@ def obtener_datos_grafica():
 #Busqueda dinamica
 @app.route('/buscar_clientes', methods=['GET'])
 @jwt_required()
+@authorize(['clients'])
 def buscar_clientes():
     query = request.args.get('q','')
     resultados_clientes = db_client.find({"nombre":{"$regex":query,"$options":"i"}}).sort("_id", -1)
@@ -93,9 +116,13 @@ def buscar_clientes():
 
 @app.route('/buscar_breaches', methods=['GET'])
 @jwt_required()
+@authorize(['home'])
 def buscar_breaches():
+    user_id = get_jwt_identity()
+    breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
+    db = mongo.db[breach]
     query = request.args.get('q','')
-    resultados_clientes = db_breaches.find({"model_name":{"$regex":query,"$options":"i"}}).sort("_id", -1)
+    resultados_clientes = db.find({"model_name":{"$regex":query,"$options":"i"}}).sort("_id", -1)
     return jsonify(list(resultados_clientes))
 
 
@@ -104,9 +131,13 @@ def buscar_breaches():
 
 @app.route("/breaches", methods=["GET"])
 @jwt_required()
+@authorize(['breaches'])
 def getBreaches():
+    user_id = get_jwt_identity()
+    breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
+    db = mongo.db[breach]
     breaches = []
-    for doc in db_breaches.find().sort("_id", -1):
+    for doc in db.find().sort("_id", -1):
         breaches.append({
             '_id': str(doc['_id']),
             'model_name': doc['model_name'],
@@ -120,8 +151,12 @@ def getBreaches():
 
 @app.route("/breach/<id>", methods=["GET"])
 @jwt_required()
+@authorize(['breaches'])
 def getBreach(id):
-    user = db_breaches.find_one({'_id': ObjectId(id)})
+    user_id = get_jwt_identity()
+    breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
+    db = mongo.db[breach]
+    user = db.find_one({'_id': ObjectId(id)})
     return jsonify({
         '_id': str(user['_id']),
         'model_name': user['model_name'],
@@ -134,16 +169,24 @@ def getBreach(id):
 
 @app.route("/breaches/<id>", methods=["DELETE"])
 @jwt_required()
+@authorize(['breaches'])
 def deleteBreach(id):
-    db_breaches.delete_one({'_id': ObjectId(id)})
+    user_id = get_jwt_identity()
+    breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
+    db = mongo.db[breach]
+    db.delete_one({'_id': ObjectId(id)})
     return jsonify({'msg': 'Breach deleted'})
 
 
 @app.route("/breaches/<id>", methods=["PUT"])
 @jwt_required()
+@authorize(['breaches'])
 def updateBreach(id):
-    user = db_breaches.find_one({'_id': ObjectId(id)})
-    db_breaches.update_one({'_id': ObjectId(id)}, {'$set': {
+    user_id = get_jwt_identity()
+    breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
+    db = mongo.db[breach]
+    user = db.find_one({'_id': ObjectId(id)})
+    db.update_one({'_id': ObjectId(id)}, {'$set': {
         'model_name': request.json.get('model_name', user['model_name']),
         'description': request.json.get('description', user['description']),
         'score': request.json.get('score', user['score']),
@@ -156,6 +199,7 @@ def updateBreach(id):
 
 @app.route("/clientes", methods=["POST"])
 @jwt_required()
+@authorize(['register'])
 def createUser():
 
     data = request.json
@@ -184,6 +228,7 @@ def createUser():
 
 @app.route("/clientes", methods=["GET"])
 @jwt_required()
+@authorize(['home'])
 def getUsers():
     clients = []
     for doc in db_client.find():
@@ -205,6 +250,7 @@ def getUsers():
 
 @app.route("/cliente/<id>", methods=["GET"])
 @jwt_required()
+@authorize(['clients'])
 def getUser(id):
     user = db_client.find_one({'_id': ObjectId(id)})
     return jsonify({
@@ -229,6 +275,7 @@ def deleteUser(id):
 
 @app.route("/clientes/<id>", methods=["PUT"])
 @jwt_required()
+@authorize(['clients'])
 def updateUser(id):
     user = db_client.find_one({'_id': ObjectId(id)})
     db_client.update_one({'_id': ObjectId(id)}, {'$set': {

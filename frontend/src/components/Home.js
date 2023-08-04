@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import Plot from "react-plotly.js";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import TokenExpiredAlert from "./Wrapper";
+import TokenExpiredAlert from "./TokenExpiredAlert";
 
 const API = process.env.REACT_APP_API;
 
-export const Home = () => {
+export const Home = ({ handleSessionExpired }) => {
     const [data, setData] = useState(null);
     const [startDate, setStartDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
@@ -54,12 +54,18 @@ export const Home = () => {
             const expirationDate = new Date(decodedToken.exp * 1000);
             return expirationDate < new Date();
         };
-
-        if (isTokenExpired()) {
-            // Mostrar la alerta de token caducado utilizando el componente reutilizable
-            TokenExpiredAlert();
+        try {
+            if (isTokenExpired()) {
+                // Mostrar la alerta de token caducado utilizando el componente reutilizable
+                localStorage.removeItem('token');
+                TokenExpiredAlert( handleSessionExpired );
+            }
+        } catch (error) {
+            console.error(error);
         }
-    }, []);
+
+        
+    }, [handleSessionExpired]);
 
 
     const filtrarDatosPorFechas = () => {

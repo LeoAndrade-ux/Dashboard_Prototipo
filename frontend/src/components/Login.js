@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 
 export const Login = ({ handleLogin }) => {
@@ -7,6 +8,8 @@ export const Login = ({ handleLogin }) => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate(); // Agrega useNavigate aquí
 
   const handleLoginClick = () => {
     if (!username || !password) {
@@ -30,23 +33,19 @@ export const Login = ({ handleLogin }) => {
         if (!response.ok) {
           throw new Error("Credenciales inválidas");
         }
-        handleLogin(); // Utilizar handleLogin para navegar al inicio
         return response.json();
       })
       .then((data) => {
         const token = data.access_token;
         localStorage.setItem("token", token);
+        handleLogin();
         Swal.fire({
           icon: "success",
           title: "Bienvenido!!!",
           showConfirmButton: false,
           timer: 1500,
         }).then(() => {
-          // Redirigir al inicio usando useNavigate()
-          // Aquí asumiendo que el componente Login está dentro del ámbito del enrutador
-          // Si no es así, asegúrate de pasar handleLogin como prop desde el componente padre
-          // que está dentro del ámbito del enrutador y tiene acceso a useNavigate()
-          window.location.href = "/";
+          navigate("/"); // Utiliza el navigate aquí
         });
       })
       .catch((error) => {

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, Fragment, useCallback } from "react";
 import Swal from "sweetalert2";
-import TokenExpiredAlert from "./Wrapper";
+import TokenExpiredAlert from "./TokenExpiredAlert";
 
 const API = process.env.REACT_APP_API;
 
-export const Users = () => {
+export const Users = ({handleSessionExpired}) => {
     const [users, setUsers] = useState([]);
     const token = localStorage.getItem('token');
+
     const getUsers = useCallback(async () => {
         try {
             const resp = await fetch(`${API}/clientes`, {
@@ -16,12 +17,13 @@ export const Users = () => {
                 }
             });
             const data = await resp.json();
+            console.log(data);
             setUsers(data);
         } catch (error) {
             Swal.fire({
                 icon: "error",
                 title: "Oops...",
-                text: "No se pudo consultar!",
+                text: error.message,
             });
         }
     }, [token]);
@@ -39,9 +41,11 @@ export const Users = () => {
       
           if (isTokenExpired()) {
             // Mostrar la alerta de token caducado utilizando el componente reutilizable
-            TokenExpiredAlert();
+            localStorage.removeItem('token');
+            TokenExpiredAlert(handleSessionExpired);
+            
           }
-    },);
+    },[getUsers, handleSessionExpired]);
 
     return (
         <Fragment>

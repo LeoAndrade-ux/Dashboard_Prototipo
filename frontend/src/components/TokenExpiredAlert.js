@@ -1,10 +1,11 @@
 //import React from "react";
 import Swal from "sweetalert2";
 
-const TokenExpiredAlert = () => {
+const TokenExpiredAlert = (handleSessionExpired) => {
   const handleAccept = () => {
+    handleSessionExpired()
     // Redirección a la pantalla de inicio de sesión
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return Swal.fire({

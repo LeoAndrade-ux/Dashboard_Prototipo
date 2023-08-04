@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-export const Navbar = ({ isLoggedIn, handleLogout }) => {
+export const Navbar = ({ isLoggedIn, handleLogout, userType }) => {
     const [collapsed, setCollapsed] = useState(true);
 
     const toggleNavbar = () => {
@@ -26,26 +26,46 @@ export const Navbar = ({ isLoggedIn, handleLogout }) => {
                         {isLoggedIn ? (
                             // Mostrar rutas protegidas solo si el usuario ha iniciado sesión
                             <>
-                                <li className="nav-item">
-                                    <Link className="nav-link" to="/">
-                                        Home
-                                    </Link>
-                                </li>
-                                <li className="nav-item">
-                                    <Link className="nav-link" to="/breaches">
-                                        Brechas
-                                    </Link>
-                                </li>
-                                <li className="nav-item">
-                                    <Link className="nav-link" to="/clients">
-                                        Clientes
-                                    </Link>
-                                </li>
-                                <li className="nav-item">
-                                    <Link className="nav-link" to="/register">
-                                        Registrar
-                                    </Link>
-                                </li>
+                                {userType === "normal" && (
+                                    <>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to="/">
+                                                Home
+                                            </Link>
+                                        </li>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to="/breaches">
+                                                Brechas
+                                            </Link>
+                                        </li>
+                                    </>
+                                )}
+
+                                {userType === "administrador" && (
+                                    <>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to="/">
+                                                Home
+                                            </Link>
+                                        </li>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to="/breaches">
+                                                Brechas
+                                            </Link>
+                                        </li>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to="/register">
+                                                Registrar
+                                            </Link>
+                                        </li>
+                                        <li className="nav-item">
+                                            <Link className="nav-link" to="/clients">
+                                                Clientes
+                                            </Link>
+                                        </li>
+                                    </>
+                                )}
+
                                 <li className="nav-item">
                                     <button className="btn btn-secondary my-2 my-sm-0" onClick={handleLogout}>Cerrar Sesión</button>
                                 </li>

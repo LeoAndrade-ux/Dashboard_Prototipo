@@ -1,10 +1,10 @@
 import React, {useState, useEffect} from "react";
 import Swal from 'sweetalert2'
-import TokenExpiredAlert from "./Wrapper";
+import TokenExpiredAlert from "./TokenExpiredAlert";
 
 const token = localStorage.getItem('token');
 
-export const Register = () => {
+export const Register = ({ handleSessionExpired  }) => {
     const API = process.env.REACT_APP_API;
     const [name, setName] = useState("");
     const [ip, setIp] = useState("");
@@ -65,9 +65,11 @@ export const Register = () => {
     
         if (isTokenExpired()) {
           // Mostrar la alerta de token caducado utilizando el componente reutilizable
-          TokenExpiredAlert();
+          localStorage.removeItem('token');
+          TokenExpiredAlert(handleSessionExpired);
+          
         }
-      }, []);
+      }, [ handleSessionExpired]);
 
     return (
         <div className="container-lg">

@@ -1,17 +1,32 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
+import { useCookies } from "react-cookie"; // Importa la función useCookies de react-cookie
 
 export const Login = ({ handleLogin }) => {
   const API = process.env.REACT_APP_API;
-
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate(); // Agrega useNavigate aquí
+  const navigate = useNavigate();
+  const [cookies, setCookie] = useCookies(["access_token_cookie"]); // Utiliza useCookies para acceder a las cookies
 
-  const handleLoginClick = () => {
+  useEffect(() => {
+    if (cookies.access_token_cookie) {
+      handleLogin();
+      Swal.fire({
+        icon: "success",
+        title: "Bienvenido!!!",
+        showConfirmButton: false,
+        timer: 1500,
+      }).then(() => {
+        navigate("/"); // Utiliza el navigate aquí
+      });
+    }
+  }, [cookies.access_token_cookie, handleLogin, navigate]);
+
+  const handleLoginClick = async () => {
     if (!username || !password) {
       Swal.fire({
         icon: "error",
@@ -28,36 +43,23 @@ export const Login = ({ handleLogin }) => {
       body: JSON.stringify({ username: username, password: password }),
     };
 
-    fetch(`${API}/login`, requestOptions)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Credenciales inválidas");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        const token = data.access_token;
-        localStorage.setItem("token", token);
-        handleLogin();
-        Swal.fire({
-          icon: "success",
-          title: "Bienvenido!!!",
-          showConfirmButton: false,
-          timer: 1500,
-        }).then(() => {
-          navigate("/"); // Utiliza el navigate aquí
-        });
-      })
-      .catch((error) => {
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: error.message,
-        });
-      })
-      .finally(() => {
-        setLoading(false);
+    try {
+      const response = await fetch(`${API}/login`, requestOptions);
+      if (!response.ok) {
+        throw new Error("Credenciales inválidas");
+      }
+      const data = await response.json();
+      const token = data.access_token_cookie;
+      setCookie('access_token_cookie', token);
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message,
       });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

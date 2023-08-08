@@ -1,10 +1,9 @@
-import React, {useState, useEffect} from "react";
-import Swal from 'sweetalert2'
+import React, { useState, useEffect } from "react";
+import Swal from "sweetalert2";
 import TokenExpiredAlert from "./TokenExpiredAlert";
+import { useCookies } from "react-cookie";
 
-const token = localStorage.getItem('token');
-
-export const Register = ({ handleSessionExpired  }) => {
+export const Register = ({ handleSessionExpired }) => {
     const API = process.env.REACT_APP_API;
     const [name, setName] = useState("");
     const [ip, setIp] = useState("");
@@ -12,33 +11,44 @@ export const Register = ({ handleSessionExpired  }) => {
     const [private_token, setPrivateToken] = useState("");
     const [UserName, setUserName] = useState("");
     const [password, setPassword] = useState("");
-    
+
+    const [cookies, ,removeCookie] = useCookies(['access_token_cookie','userType']);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const token = cookies.access_token;
             const resp = await fetch(`${API}/clientes`, {
                 method: "POST",
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
                 },
-                body: JSON.stringify(
-                    {
-                        name: name,
-                        ip: ip,
-                        public_token: public_token,
-                        private_token: private_token,
-                        username: UserName,
-                        password: password
-                    }
-                )
+                credentials: 'include',
+                body: JSON.stringify({
+                    name: name,
+                    ip: ip,
+                    public_token: public_token,
+                    private_token: private_token,
+                    username: UserName,
+                    password: password,
+                }),
             });
 
             const data = await resp.json();
-            if (data['msg'] === 'True') {
-                Swal.fire({icon: 'success', title: 'Cliente registrado correctamente', showConfirmButton: false, timer: 1500})
+            if (data["msg"] === "True") {
+                Swal.fire({
+                    icon: "success",
+                    title: "Cliente registrado correctamente",
+                    showConfirmButton: false,
+                    timer: 1500,
+                });
             } else {
-                Swal.fire({icon: 'error', title: 'Oops...', text: 'No se pudo registrar!'})
+                Swal.fire({
+                    icon: "error",
+                    title: "Oops...",
+                    text: "No se pudo registrar!",
+                });
             }
             setName("");
             setIp("");
@@ -46,30 +56,32 @@ export const Register = ({ handleSessionExpired  }) => {
             setPrivateToken("");
             setPublicToken("");
             setUserName("");
-
         } catch (error) {
-            Swal.fire({icon: 'error', title: 'Oops...', text: 'Algo salio mal!'})
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Algo salio mal!",
+            });
         }
     };
 
     useEffect(() => {
         const isTokenExpired = () => {
-          const token = localStorage.getItem("token");
-          if (!token) {
-            return true;
-          }
-          const decodedToken = JSON.parse(atob(token.split(".")[1]));
-          const expirationDate = new Date(decodedToken.exp * 1000);
-          return expirationDate < new Date();
+            const token = cookies.access_token_cookie;
+            if (!token) {
+                return true;
+            }
+            const decodedToken = JSON.parse(atob(token.split(".")[1]));
+            const expirationDate = new Date(decodedToken.exp * 1000);
+            return expirationDate < new Date();
         };
-    
+
         if (isTokenExpired()) {
-          // Mostrar la alerta de token caducado utilizando el componente reutilizable
-          localStorage.removeItem('token');
-          TokenExpiredAlert(handleSessionExpired);
-          
+            removeCookie('access_token_cookie');
+            removeCookie('userType');
+            TokenExpiredAlert(handleSessionExpired);
         }
-      }, [ handleSessionExpired]);
+    }, [removeCookie, handleSessionExpired, cookies.access_token_cookie]);
 
     return (
         <div className="container-lg">
@@ -87,7 +99,7 @@ export const Register = ({ handleSessionExpired  }) => {
                                         (e) => setName(e.target.value)
                                     }
                                     value={name}
-                                    autoFocus/>
+                                    autoFocus />
                             </div>
                         </div>
                         <div className="col-md-6 mb-4">
@@ -99,7 +111,7 @@ export const Register = ({ handleSessionExpired  }) => {
                                     onChange={
                                         (e) => setIp(e.target.value)
                                     }
-                                    value={ip}/>
+                                    value={ip} />
                             </div>
                         </div>
                         <div className="col-md-6 mb-4">
@@ -111,7 +123,7 @@ export const Register = ({ handleSessionExpired  }) => {
                                     onChange={
                                         (e) => setPublicToken(e.target.value)
                                     }
-                                    value={public_token}/>
+                                    value={public_token} />
                             </div>
                         </div>
                         <div className="col-md-6 mb-4">
@@ -123,7 +135,7 @@ export const Register = ({ handleSessionExpired  }) => {
                                     onChange={
                                         (e) => setPrivateToken(e.target.value)
                                     }
-                                    value={private_token}/>
+                                    value={private_token} />
                             </div>
                         </div>
                         <div className="col-md-6 mb-4">
@@ -135,7 +147,7 @@ export const Register = ({ handleSessionExpired  }) => {
                                     onChange={
                                         (e) => setUserName(e.target.value)
                                     }
-                                    value={UserName}/>
+                                    value={UserName} />
                             </div>
                         </div>
                         <div className="col-md-6 mb-4">
@@ -147,7 +159,7 @@ export const Register = ({ handleSessionExpired  }) => {
                                     onChange={
                                         (e) => setPassword(e.target.value)
                                     }
-                                    value={password}/>
+                                    value={password} />
                             </div>
                         </div>
                     </div>

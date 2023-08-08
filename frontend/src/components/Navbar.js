@@ -1,14 +1,23 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useCookies } from 'react-cookie';
 
-export const Navbar = ({ isLoggedIn, handleLogout, userType }) => {
+export const Navbar = ({ isLoggedIn, userType, handleLogout }) => {
     const [collapsed, setCollapsed] = useState(true);
-
+    const navigate = useNavigate();
+    const [, , removeCookie] = useCookies(['access_token_cookie', 'userType']);
     const toggleNavbar = () => {
         setCollapsed(!collapsed);
     };
 
     const navClass = collapsed ? 'collapse navbar-collapse' : 'navbar-collapse';
+
+    const handleLogoutClick = () => {
+        removeCookie('access_token_cookie','', { path: '/'});
+        removeCookie('userType', '', { path: '/'});
+        handleLogout();
+        navigate('/login');
+    };
 
     return (
         <nav className="navbar navbar-expand-lg bg-primary" data-bs-theme="dark">
@@ -26,33 +35,19 @@ export const Navbar = ({ isLoggedIn, handleLogout, userType }) => {
                         {isLoggedIn ? (
                             // Mostrar rutas protegidas solo si el usuario ha iniciado sesión
                             <>
-                                {userType === "normal" && (
-                                    <>
-                                        <li className="nav-item">
-                                            <Link className="nav-link" to="/">
-                                                Home
-                                            </Link>
-                                        </li>
-                                        <li className="nav-item">
-                                            <Link className="nav-link" to="/breaches">
-                                                Brechas
-                                            </Link>
-                                        </li>
-                                    </>
-                                )}
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/">
+                                        Home
+                                    </Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/breaches">
+                                        Brechas
+                                    </Link>
+                                </li>
 
-                                {userType === "administrador" && (
+                                {userType === 'administrador' && (
                                     <>
-                                        <li className="nav-item">
-                                            <Link className="nav-link" to="/">
-                                                Home
-                                            </Link>
-                                        </li>
-                                        <li className="nav-item">
-                                            <Link className="nav-link" to="/breaches">
-                                                Brechas
-                                            </Link>
-                                        </li>
                                         <li className="nav-item">
                                             <Link className="nav-link" to="/register">
                                                 Registrar
@@ -67,7 +62,9 @@ export const Navbar = ({ isLoggedIn, handleLogout, userType }) => {
                                 )}
 
                                 <li className="nav-item">
-                                    <button className="btn btn-secondary my-2 my-sm-0" onClick={handleLogout}>Cerrar Sesión</button>
+                                    <button className="btn btn-secondary my-2 my-sm-0" onClick={handleLogoutClick}>
+                                        Cerrar Sesión
+                                    </button>
                                 </li>
                             </>
                         ) : (

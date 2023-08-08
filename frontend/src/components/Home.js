@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Plot from "react-plotly.js";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import TokenExpiredAlert from "./TokenExpiredAlert";
+import { useCookies } from "react-cookie";
 
 const API = process.env.REACT_APP_API;
 
@@ -10,62 +11,56 @@ export const Home = ({ handleSessionExpired }) => {
     const [data, setData] = useState(null);
     const [startDate, setStartDate] = useState(null);
     const [endDate, setEndDate] = useState(null);
+    const [cookies, removeCookie] = useCookies(['cookies.access_token_cookie']);
+    const token = cookies.access_token_cookie;
 
-
-    const obtenerDatosGrafica = async () => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                await fetch(`${API}/datos_grafica`, {
-                    method: 'GET',
+    const obtenerDatosGrafica = useCallback(async () => {
+        try {
+            if (token) {
+                const resp = await fetch(`${API}/datos_grafica`, {
+                    method: "GET",
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
-                    }
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('No se pudo obtener los datos protegidos');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        setData(data); // Actualiza el estado con los datos recibidos del backend
-                    })
-                    .catch(error => {
-                        console.error(error);
-                    });
-            } catch (error) {
-                console.error(error);
-            }
-        }
+                    },
+                    credentials: 'include'
+                });
 
-    };
+                if (!resp.ok) {
+                    throw new Error("No se pudo obtener los datos protegidos");
+                }
 
-
-    useEffect(() => {
-        obtenerDatosGrafica();
-        const isTokenExpired = () => {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                return true;
-            }
-            const decodedToken = JSON.parse(atob(token.split(".")[1]));
-            const expirationDate = new Date(decodedToken.exp * 1000);
-            return expirationDate < new Date();
-        };
-        try {
-            if (isTokenExpired()) {
-                // Mostrar la alerta de token caducado utilizando el componente reutilizable
-                localStorage.removeItem('token');
-                TokenExpiredAlert( handleSessionExpired );
+                const data = await resp.json();
+                setData(data); // Actualiza el estado con los datos recibidos del backend
             }
         } catch (error) {
             console.error(error);
         }
+    },[token]);
 
-        
-    }, [handleSessionExpired]);
+    useEffect(() => {
+        obtenerDatosGrafica();
+
+        const isTokenExpired = () => {
+            if (!token) {
+                return true;
+            }
+
+            const decodedToken = JSON.parse(atob(token.split(".")[1]));
+            const expirationDate = new Date(decodedToken.exp * 1000);
+            return expirationDate < new Date();
+        };
+
+        try {
+            if (isTokenExpired()) {
+                removeCookie('access_token','', { path: '/'});
+                removeCookie('userType', '', { path: '/'});
+                TokenExpiredAlert(handleSessionExpired);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }, [handleSessionExpired, token, removeCookie, obtenerDatosGrafica]);
 
 
     const filtrarDatosPorFechas = () => {
@@ -85,7 +80,7 @@ export const Home = ({ handleSessionExpired }) => {
         return Object.entries(filteredData).reduce((groupedData, [fecha, ips]) => {
             for (const ip in ips) {
                 for (const nombre in ips[ip]) {
-                    const mes = fecha.slice(0, 7); // Extraer el año y mes (por ejemplo, "2023-07")
+                    const mes = fecha.slice(0, 7);
                     if (!groupedData[nombre]) {
                         groupedData[nombre] = {};
                     }

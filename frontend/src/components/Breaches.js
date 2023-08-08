@@ -1,41 +1,48 @@
 import React, { useState, useEffect, Fragment, useCallback } from "react";
 import Swal from "sweetalert2";
 import TokenExpiredAlert from "./TokenExpiredAlert";
+import { useCookies } from 'react-cookie';
 
 const API = process.env.REACT_APP_API;
+
 
 export const Breaches = ({ handleSessionExpired }) => {
     const [breaches, setBreaches] = useState([]);
     const [query, setQuery] = useState("");
     const [searchResults, setSearchResults] = useState([]);
-
-    const token = localStorage.getItem("token");
+    const [cookies,,removeCookie] = useCookies(['access_token_cookie','userType'])
+    const token =cookies.access_token_cookie;
 
     const handleInputChange = (event) => {
         event.preventDefault();
         const termino = event.target.value;
         setQuery(termino);
-        // Si el término de búsqueda está vacío, restaurar la tabla completa
         if (termino.trim() === "") {
             setSearchResults(breaches);
         } else {
-            // Hacer las solicitudes al backend cuando el usuario escriba algo
             buscarResultadosBreaches(termino);
         }
     };
 
     const buscarResultadosBreaches = async (termino) => {
-        // Hacer la solicitud al backend para buscar en la colección de clientes
-        const resp = await fetch(`${API}/buscar_breaches?q=${termino}`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-            },
-        });
-        const data = await resp.json();
-        console.log(data)
-        setSearchResults(data);
+        try {
+            const resp = await fetch(`${API}/buscar_breaches?q=${termino}`, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                },
+                credentials: 'include'
+            });
+            const data = await resp.json();
+            setSearchResults(data);
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "No se pudo consultar!",
+            });
+        }
     };
 
     const getbreachs = useCallback(async () => {
@@ -44,8 +51,9 @@ export const Breaches = ({ handleSessionExpired }) => {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
+                    "Authorization": `Bearer ${token}`
                 },
+                credentials: 'include'
             });
             const data = await resp.json();
             setBreaches(data);
@@ -62,22 +70,17 @@ export const Breaches = ({ handleSessionExpired }) => {
     useEffect(() => {
         getbreachs();
         const isTokenExpired = () => {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                return true;
-            }
             const decodedToken = JSON.parse(atob(token.split(".")[1]));
             const expirationDate = new Date(decodedToken.exp * 1000);
             return expirationDate < new Date();
         };
 
         if (isTokenExpired()) {
-            // Mostrar la alerta de token caducado utilizando el componente reutilizable
-            localStorage.removeItem('token');
-            TokenExpiredAlert(handleSessionExpired);
-
+            removeCookie('access_token_cookie','', { path: '/'});
+            removeCookie('userType', '', { path: '/'});
+            TokenExpiredAlert(handleSessionExpired)
         }
-    }, [getbreachs, handleSessionExpired]);
+    }, [getbreachs, handleSessionExpired, token, removeCookie]);
 
     return (
         <Fragment>
@@ -117,7 +120,7 @@ export const Breaches = ({ handleSessionExpired }) => {
                                 );
                             } catch (error) {
                                 console.error("Error al renderizar fila:", error);
-                                return null; // O puedes mostrar un mensaje de error o realizar alguna acción adecuada en caso de error
+                                return null;
                             }
                         })}
                     </tbody>

@@ -1,9 +1,10 @@
 from functools import wraps
-from flask import Flask, request, jsonify
+from datetime import timedelta
+from flask import Flask, request, jsonify, make_response
 from flask_pymongo import PyMongo, ObjectId
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import jwt_required, create_access_token, JWTManager, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, set_access_cookies, jwt_required
 from operaciones import conteo_brechas
 
 
@@ -11,15 +12,20 @@ app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/DarkTrace"
 mongo = PyMongo(app)
 
-CORS(app)
+CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
 bcrypt = Bcrypt(app)
 
 # Configuración del JWTManager
-app.config["JWT_SECRET_KEY"] = "your-secret-key"  # Reemplaza "your-secret-key" con una clave secreta segura
+# Configuración del JWTManager
+app.config['JWT_SECRET_KEY'] = 'tu_clave_secreta'  # Cambia esto a una clave segura en producción
+app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+app.config['JWT_COOKIE_SECURE'] = False  # Asegúrate de que esto sea True en producción para usar HTTPS
+app.config['JWT_COOKIE_HTTPONLY'] = True
+app.config['JWT_COOKIE_CSRF_PROTECT'] = True  # Activa esto para protegerse contra ataques CSRF
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)  # Configura el tiempo de expiración del token (1 hora en este ejemplo)con una clave secreta segura
+
 jwt = JWTManager(app)
 
-
-db_breaches = mongo.db.breaches_radical
 db_client = mongo.db.clients
 
 #Definir roles y permisos
@@ -36,14 +42,11 @@ def authorize(permisos):
             user = db_client.find_one({'_id': ObjectId(user_id)})
             if user and 'type_user' in user:
                 role = user['type_user']
-                print(role)
                 if role in ROLES and all(permiso in ROLES[role] for permiso in permisos):
                     return fn(*args, **kwargs)
             return jsonify(message='No tienes permisos para realizar esta acción'), 403
         return wrapper
     return decorator
-
-#Autenticacion de clientes
 
 # Función para obtener el usuario actual a partir del token JWT
 @jwt.user_identity_loader
@@ -67,6 +70,7 @@ def unauthorized_response(callback):
     return jsonify({"message": "Token is missing"}), 401
 
 
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -77,9 +81,10 @@ def login():
     client = db_client.find_one({'username': username})
     if client and bcrypt.check_password_hash(client['password'], password):
         # La autenticación es exitosa, generar y devolver el token JWT
-        user_type = client.get('type_user', 'normal')
-        token = create_access_token(identity=str(client['_id']), additional_claims={'type_user': user_type})
-        return jsonify(access_token=token), 200
+        token = create_access_token(identity=str(client['_id']), additional_claims={'role': client['type_user']})
+        response = make_response(jsonify(access_token_cookie=token),200)
+        set_access_cookies(response, token)
+        return response
 
     return jsonify(message='Credenciales inválidas'), 401
 
@@ -87,7 +92,7 @@ def login():
 
 @app.route('/datos_grafica', methods=['GET'])
 @jwt_required()
-
+@authorize(['home'])
 def obtener_datos_grafica():
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
@@ -108,7 +113,6 @@ def obtener_datos_grafica():
 #Busqueda dinamica
 @app.route('/buscar_clientes', methods=['GET'])
 @jwt_required()
-@authorize(['clients'])
 def buscar_clientes():
     query = request.args.get('q','')
     resultados_clientes = db_client.find({"nombre":{"$regex":query,"$options":"i"}}).sort("_id", -1)
@@ -116,7 +120,6 @@ def buscar_clientes():
 
 @app.route('/buscar_breaches', methods=['GET'])
 @jwt_required()
-@authorize(['home'])
 def buscar_breaches():
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
@@ -131,7 +134,6 @@ def buscar_breaches():
 
 @app.route("/breaches", methods=["GET"])
 @jwt_required()
-@authorize(['breaches'])
 def getBreaches():
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
@@ -151,7 +153,6 @@ def getBreaches():
 
 @app.route("/breach/<id>", methods=["GET"])
 @jwt_required()
-@authorize(['breaches'])
 def getBreach(id):
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
@@ -169,7 +170,6 @@ def getBreach(id):
 
 @app.route("/breaches/<id>", methods=["DELETE"])
 @jwt_required()
-@authorize(['breaches'])
 def deleteBreach(id):
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
@@ -180,7 +180,6 @@ def deleteBreach(id):
 
 @app.route("/breaches/<id>", methods=["PUT"])
 @jwt_required()
-@authorize(['breaches'])
 def updateBreach(id):
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
@@ -199,7 +198,6 @@ def updateBreach(id):
 
 @app.route("/clientes", methods=["POST"])
 @jwt_required()
-@authorize(['register'])
 def createUser():
 
     data = request.json
@@ -228,7 +226,6 @@ def createUser():
 
 @app.route("/clientes", methods=["GET"])
 @jwt_required()
-@authorize(['home'])
 def getUsers():
     clients = []
     for doc in db_client.find():
@@ -250,7 +247,6 @@ def getUsers():
 
 @app.route("/cliente/<id>", methods=["GET"])
 @jwt_required()
-@authorize(['clients'])
 def getUser(id):
     user = db_client.find_one({'_id': ObjectId(id)})
     return jsonify({
@@ -275,7 +271,6 @@ def deleteUser(id):
 
 @app.route("/clientes/<id>", methods=["PUT"])
 @jwt_required()
-@authorize(['clients'])
 def updateUser(id):
     user = db_client.find_one({'_id': ObjectId(id)})
     db_client.update_one({'_id': ObjectId(id)}, {'$set': {

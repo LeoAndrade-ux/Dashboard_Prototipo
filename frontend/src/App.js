@@ -6,25 +6,23 @@ import { Navbar } from './components/Navbar';
 import { Users } from './components/Users';
 import { Home } from './components/Home';
 import { Login } from './components/Login';
-
+import { useCookies } from 'react-cookie'; // Importa la función useCookies de react-cookie
 
 function App() {
+  const [cookies, setCookies] = useCookies(['access_token_cookie','userType']); // Utiliza useCookies para acceder a las cookies
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userType, setUserType] = useState("");
-
-
-
   // Función para manejar el inicio de sesión exitoso
   const handleLogin = () => {
     setIsLoggedIn(true);
-    const token = localStorage.getItem('token');
+    const token = cookies.access_token_cookie;
     const decodedToken = JSON.parse(atob(token.split(".")[1]));
-    setUserType(decodedToken.type_user);
-    localStorage.setItem('userType', decodedToken);
+    setUserType(decodedToken.role);
+    setCookies('userType',decodedToken.role)
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+  // Remueve la cookie al hacer logout
     setIsLoggedIn(false);
   };
 
@@ -32,17 +30,11 @@ function App() {
     console.log("Session expired");
     setIsLoggedIn(false);
   };
-
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsLoggedIn(!!token);
-    const userType = localStorage.getItem('userType');
-    if (userType) {
-      setUserType(userType);
+    if (cookies.access_token_cookie) {
+      handleLogin();
     }
-
-  }, []);
-
+  });
   return (
     <Router>
       <Navbar isLoggedIn={isLoggedIn} handleLogout={handleLogout}  userType={userType}/>
@@ -78,7 +70,6 @@ function App() {
       </div>
     </Router>
   );
-
 }
 
 export default App;

@@ -13,8 +13,8 @@ export const Navbar = ({ isLoggedIn, userType, handleLogout }) => {
     const navClass = collapsed ? 'collapse navbar-collapse' : 'navbar-collapse';
 
     const handleLogoutClick = () => {
-        removeCookie('access_token_cookie','', { path: '/'});
-        removeCookie('userType', '', { path: '/'});
+        removeCookie('access_token_cookie', '', { path: '/' });
+        removeCookie('userType', '', { path: '/' });
         handleLogout();
         navigate('/login');
     };
@@ -32,7 +32,7 @@ export const Navbar = ({ isLoggedIn, userType, handleLogout }) => {
                 </button>
                 <div className={navClass}>
                     <ul className="navbar-nav mr-auto">
-                        {isLoggedIn ? (
+                        {isLoggedIn && (
                             // Mostrar rutas protegidas solo si el usuario ha iniciado sesión
                             <>
                                 <li className="nav-item">
@@ -67,13 +67,6 @@ export const Navbar = ({ isLoggedIn, userType, handleLogout }) => {
                                     </button>
                                 </li>
                             </>
-                        ) : (
-                            // Mostrar formulario de inicio de sesión si el usuario no ha iniciado sesión
-                            <li className="nav-item">
-                                <Link className="nav-link" to="/login">
-                                    Iniciar sesión
-                                </Link>
-                            </li>
                         )}
                     </ul>
                 </div>

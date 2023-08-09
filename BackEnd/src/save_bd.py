@@ -9,14 +9,12 @@ db = mongo.DarkTrace
 
 def breaches_model(ip, public_token, private_token, owner, database):
     collection = database[owner]
-    # Obtener los _id existentes en la colección
     existing_ids = set(doc["_id"] for doc in collection.find({}, {"_id": 1}))
     brechas_modelo_darktrace = ca.darktrace_api_call(
         ip, public_token, private_token, "modelbreaches")
     bulk_operations = []
     for breach in brechas_modelo_darktrace:
         id = breach["pbid"]
-        # Verificar si el _id ya existe en la colección
         if id not in existing_ids:
             model_name = breach["model"]["then"]["name"]
             description = breach["model"]["then"]["description"]

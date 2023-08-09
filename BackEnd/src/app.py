@@ -12,7 +12,7 @@ app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb://localhost:27017/DarkTrace"
 mongo = PyMongo(app)
 
-CORS(app, origins=["http://localhost:3000"], supports_credentials=True)
+CORS(app, origins=["http://10.1.22.92:3000","http://localhost:3000"], supports_credentials=True)
 bcrypt = Bcrypt(app)
 
 # Configuración del JWTManager
@@ -288,4 +288,4 @@ def updateUser(id):
     return jsonify({'msg': 'True'})
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='10.1.22.92', port=5000, debug=True)

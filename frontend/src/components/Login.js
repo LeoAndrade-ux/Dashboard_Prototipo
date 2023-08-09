@@ -4,7 +4,7 @@ import Swal from "sweetalert2";
 import { useCookies } from "react-cookie"; // Importa la función useCookies de react-cookie
 
 export const Login = ({ handleLogin }) => {
-  const API = process.env.REACT_APP_API;
+  //const API = process.env.REACT_APP_API;
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,7 @@ export const Login = ({ handleLogin }) => {
     };
 
     try {
-      const response = await fetch(`${API}/login`, requestOptions);
+      const response = await fetch('http://10.1.22.92:5000/login', requestOptions);
       if (!response.ok) {
         throw new Error("Credenciales inválidas");
       }

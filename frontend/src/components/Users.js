@@ -1,8 +1,7 @@
 import React, { useState, useEffect, Fragment, useCallback } from "react";
 import Swal from "sweetalert2";
-import TokenExpiredAlert from "./TokenExpiredAlert";
 import { useCookies } from "react-cookie";
-import Modal from "react-modal"; // Importa react-modal
+import Modal from "react-modal";
 Modal.setAppElement('#root')
 
 const API = process.env.REACT_APP_API;
@@ -13,6 +12,9 @@ export const Users = ({ handleSessionExpired }) => {
   const token = cookies.access_token_cookie;
   const [editingUser, setEditingUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [setShowTokenExpiredAlert] = useState(false);
+  const [setErrorMessage] = useState("");
 
   const [name, setName] = useState("");
   const [ip, setIp] = useState("");
@@ -74,6 +76,7 @@ export const Users = ({ handleSessionExpired }) => {
           showConfirmButton: false,
           timer: 1500,
         });
+        getUsers()
         closeEditModal();
       } else {
         Swal.fire({
@@ -97,13 +100,67 @@ export const Users = ({ handleSessionExpired }) => {
     }
   };
 
+  const confirmAndDeleteUser = (id) => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción eliminará al cliente permanentemente',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteUser(id);
+      }
+    });
+  };
+
+  const deleteUser = async (id) => {
+    try {
+      const resp = await fetch(`${API}/clientes/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        credentials: 'include',
+      });
+
+      const data = await resp.json();
+      if (data.msg === "User deleted") {
+        Swal.fire({
+          icon: "success",
+          title: "Cliente eliminado correctamente",
+          showConfirmButton: false,
+          timer: 1500,
+        });
+        getUsers(); // Actualizar la lista de usuarios después de eliminar uno
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: "Oops...",
+          text: "No se pudo eliminar el cliente",
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: error.message,
+      });
+    }
+  };
+
   useEffect(() => {
     const handleTokenExpiration = () => {
       removeCookie('access_token_cookie', { path: '/' });
       removeCookie('userType', { path: '/' });
-      TokenExpiredAlert(handleSessionExpired);
+      setErrorMessage("La sesión ha caducado. Por favor, vuelve a iniciar sesión.");
+      setShowTokenExpiredAlert(true);
     };
-    getUsers();
+
     const isTokenExpired = () => {
       if (!token) {
         return true;
@@ -113,10 +170,12 @@ export const Users = ({ handleSessionExpired }) => {
       return expirationDate < new Date();
     };
 
+    getUsers();
+
     if (isTokenExpired()) {
       handleTokenExpiration();
     }
-  }, [getUsers, token, handleSessionExpired, removeCookie]);
+  }, [getUsers, token, handleSessionExpired, removeCookie, setErrorMessage,setShowTokenExpiredAlert]);
 
   const openEditModal = (user) => {
     setEditingUser(user);
@@ -151,7 +210,7 @@ export const Users = ({ handleSessionExpired }) => {
               <th scope="col">Contraseña</th>
               <th scope="col">Nombre de la brecha</th>
               <th scope="col">Privilegio</th>
-              <th scope="col">Acciones</th> {/* Nueva columna para las acciones */}
+              <th scope="col">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -174,7 +233,7 @@ export const Users = ({ handleSessionExpired }) => {
                   </button>{" "}
                   <button
                     className="btn btn-danger btn-sm"
-                  // Aquí puedes agregar una función para eliminar el cliente
+                    onClick={() => confirmAndDeleteUser(user._id)}
                   >
                     Eliminar
                   </button>
@@ -184,14 +243,12 @@ export const Users = ({ handleSessionExpired }) => {
           </tbody>
         </table>
       </div>
-      {/* Modal de edición */}
       <Modal
         isOpen={isModalOpen}
-        onRequestClose={closeEditModal} // Cierra el modal cuando se solicita
+        onRequestClose={closeEditModal}
         contentLabel="Editar Cliente"
         appElement={document.getElementById('root')}
       >
-        {/* Contenido del modal */}
         {editingUser && (
           <div>
             <form onSubmit={(e) => handleSubmit(e, editingUser._id, token)}>
@@ -291,7 +348,6 @@ export const Users = ({ handleSessionExpired }) => {
           </div>
         )}
       </Modal>
-
     </Fragment>
   );
 };

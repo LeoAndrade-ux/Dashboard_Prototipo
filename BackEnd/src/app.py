@@ -261,7 +261,7 @@ def updateUser(id):
     data = request.get_json()
     print(user)
 
-    if data.get('password') is not None:
+    if data.get('password') is not "":
         hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
     else:
         hashed_password = user['password']

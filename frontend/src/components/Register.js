@@ -17,7 +17,7 @@ export const Register = ({ handleSessionExpired }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const token = cookies.access_token;
+            const token = cookies.access_token_cookie;
             const resp = await fetch(`${API}/clientes`, {
                 method: "POST",
                 headers: {
@@ -32,7 +32,7 @@ export const Register = ({ handleSessionExpired }) => {
                     private_token: private_token,
                     username: UserName,
                     password: password,
-                }),
+                })
             });
 
             const data = await resp.json();
@@ -60,7 +60,7 @@ export const Register = ({ handleSessionExpired }) => {
             Swal.fire({
                 icon: "error",
                 title: "Oops...",
-                text: "Algo salio mal!",
+                text: error.text,
             });
         }
     };

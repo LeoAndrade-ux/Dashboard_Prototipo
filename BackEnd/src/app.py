@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify, make_response
 from flask_pymongo import PyMongo, ObjectId
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
-from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, set_access_cookies, jwt_required
+from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, set_access_cookies, jwt_required, verify_jwt_in_request
 from operaciones import conteo_brechas
 
 
@@ -18,7 +18,7 @@ bcrypt = Bcrypt(app)
 # Configuración del JWTManager
 # Configuración del JWTManager
 app.config['JWT_SECRET_KEY'] = 'tu_clave_secreta'  # Cambia esto a una clave segura en producción
-app.config['JWT_TOKEN_LOCATION'] = ['cookies']
+
 app.config['JWT_COOKIE_SECURE'] = False  # Asegúrate de que esto sea True en producción para usar HTTPS
 app.config['JWT_COOKIE_HTTPONLY'] = True
 app.config['JWT_COOKIE_CSRF_PROTECT'] = True  # Activa esto para protegerse contra ataques CSRF
@@ -38,15 +38,19 @@ def authorize(permisos):
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            user_id = get_jwt_identity()
-            user = db_client.find_one({'_id': ObjectId(user_id)})
-            if user and 'type_user' in user:
-                role = user['type_user']
-                if role in ROLES and all(permiso in ROLES[role] for permiso in permisos):
-                    return fn(*args, **kwargs)
-            return jsonify(message='No tienes permisos para realizar esta acción'), 403
+            try:#Verifica el token JWT en la solicitud
+                user_id = get_jwt_identity()
+                user = db_client.find_one({'_id': ObjectId(user_id)})
+                if user and 'type_user' in user:
+                    role = user['type_user']
+                    if role in ROLES and all(permiso in ROLES[role] for permiso in permisos):
+                        return fn(*args, **kwargs)
+                return jsonify(message='No tienes permisos para realizar esta acción'), 403
+            except Exception as e:
+                return jsonify(message='Error de autenticación'), 401  # Manejar errores de autenticación
         return wrapper
     return decorator
+
 
 # Función para obtener el usuario actual a partir del token JWT
 @jwt.user_identity_loader
@@ -113,6 +117,7 @@ def obtener_datos_grafica():
 #Busqueda dinamica
 @app.route('/buscar_clientes', methods=['GET'])
 @jwt_required()
+@authorize(['clients'])
 def buscar_clientes():
     query = request.args.get('q','')
     resultados_clientes = db_client.find({"nombre":{"$regex":query,"$options":"i"}}).sort("_id", -1)
@@ -120,6 +125,7 @@ def buscar_clientes():
 
 @app.route('/buscar_breaches', methods=['GET'])
 @jwt_required()
+@authorize(['breaches'])
 def buscar_breaches():
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
@@ -134,6 +140,7 @@ def buscar_breaches():
 
 @app.route("/breaches", methods=["GET"])
 @jwt_required()
+@authorize(['breaches'])
 def getBreaches():
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
@@ -153,6 +160,7 @@ def getBreaches():
 
 @app.route("/breach/<id>", methods=["GET"])
 @jwt_required()
+@authorize(['breaches'])
 def getBreach(id):
     user_id = get_jwt_identity()
     breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
@@ -168,38 +176,12 @@ def getBreach(id):
     })
 
 
-@app.route("/breaches/<id>", methods=["DELETE"])
-@jwt_required()
-def deleteBreach(id):
-    user_id = get_jwt_identity()
-    breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
-    db = mongo.db[breach]
-    db.delete_one({'_id': ObjectId(id)})
-    return jsonify({'msg': 'Breach deleted'})
-
-
-@app.route("/breaches/<id>", methods=["PUT"])
-@jwt_required()
-def updateBreach(id):
-    user_id = get_jwt_identity()
-    breach = db_client.find_one({'_id': ObjectId(user_id)})['name_breach']
-    db = mongo.db[breach]
-    user = db.find_one({'_id': ObjectId(id)})
-    db.update_one({'_id': ObjectId(id)}, {'$set': {
-        'model_name': request.json.get('model_name', user['model_name']),
-        'description': request.json.get('description', user['description']),
-        'score': request.json.get('score', user['score']),
-        'ip': request.json.get('ip', user['ip']),
-        'breach_time': request.json.get('breach_time', user['breach_time'])
-    }})
-    return jsonify({'msg': 'Breach updated'})
-
 # CRUD base de datos clientes
 
 @app.route("/clientes", methods=["POST"])
 @jwt_required()
+@authorize(['clients'])
 def createUser():
-
     data = request.json
     # Verificar si el username ya existe en la base de datos
     if db_client.find_one({'username': data['username']}):
@@ -217,15 +199,15 @@ def createUser():
         'username': data['username'],
         'password': hashed_password,
         'name_breach': 'breaches_'+ request.json.get('name').lower(),
-        'type_user': 'user'
+        'type_user': 'normal'
     }
     db_client.insert_one(client_data)
 
     return jsonify({'msg': 'True'})
 
-
 @app.route("/clientes", methods=["GET"])
 @jwt_required()
+@authorize(['clients'])
 def getUsers():
     clients = []
     for doc in db_client.find():
@@ -233,8 +215,8 @@ def getUsers():
             '_id': str(doc['_id']),
             'name': doc['name'],
             'ip': doc['ip'],
-            'public_token': doc['public_token'][:20]+" "+doc['public_token'][20:],
-            'private_token': doc['private_token'][:20]+" "+doc['private_token'][20:],
+            'public_token': doc['public_token'],
+            'private_token': doc['private_token'],
             'username': doc['username'],
             'password': doc['password'],
             'name_breach': doc['name_breach'],
@@ -247,7 +229,9 @@ def getUsers():
 
 @app.route("/cliente/<id>", methods=["GET"])
 @jwt_required()
+@authorize(['clients'])
 def getUser(id):
+
     user = db_client.find_one({'_id': ObjectId(id)})
     return jsonify({
         '_id': str(user['_id']),
@@ -271,20 +255,37 @@ def deleteUser(id):
 
 @app.route("/clientes/<id>", methods=["PUT"])
 @jwt_required()
+@authorize(['clients'])
 def updateUser(id):
     user = db_client.find_one({'_id': ObjectId(id)})
-    db_client.update_one({'_id': ObjectId(id)}, {'$set': {
-        'name': request.json.get('name', user['name']),
-        'ip': request.json.get('ip',user['ip']),
-        'public_token': request.json.get('public_token', user['public_token']),
-        'private_token': request.json.get('private_token', user['private_token']),
-        'username': request.json.get('username', user['username']),
-        'password': request.json.get('password', user['password']),
-        'name_breach': 'breaches_'+ request.json.get('name', user['name']).lower(),
-        'type_user': request.json.get('type_user', user['type_user'])
-    }})
-    return jsonify({'msg': 'User updated'})
+    data = request.get_json()
+    print(user)
 
+    if data.get('password') is not None:
+        hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+    else:
+        hashed_password = user['password']
+
+    # Obtener los valores actuales de la base de datos para los campos que no estén en el JSON o estén vacíos
+    name = user['name'] if 'name' not in data or data['name'] == '' else data['name']
+    ip = user['ip'] if 'ip' not in data or data['ip'] == '' else data['ip']
+    public_token = user['public_token'] if 'public_token' not in data or data['public_token'] == '' else data['public_token']
+    private_token = user['private_token'] if 'private_token' not in data or data['private_token'] == '' else data['private_token']
+    username = user['username'] if 'username' not in data or data['username'] == '' else data['username']
+    name_breach = user['name_breach'] if 'name_breach' not in data or data['name_breach'] == '' else data['name_breach']
+    type_user = user['type_user'] if 'type_user' not in data or data['type_user'] == '' else data['type_user']
+
+    db_client.update_one({'_id': ObjectId(id)}, {'$set': {
+        'name': name,
+        'ip': ip,
+        'public_token': public_token,
+        'private_token': private_token,
+        'username': username,
+        'password': hashed_password,
+        'name_breach': name_breach,
+        'type_user': type_user
+    }})
+    return jsonify({'msg': 'True'})
 
 if __name__ == "__main__":
     app.run(debug=True)
